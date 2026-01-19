@@ -2,7 +2,9 @@ import arcade
 
 from scenes.base_scene import BaseScene
 from objects.player import Player
-from core.constants import PLAYER_SPEED
+from objects.wall import Wall
+
+from core.constants import PLAYER_SPEED, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
 class GameScene(BaseScene):
@@ -20,20 +22,33 @@ class GameScene(BaseScene):
         self.all_sprites = arcade.SpriteList()
         self.player = Player()
         self.all_sprites.append(self.player)
+        self.wall_list = arcade.SpriteList(use_spatial_hash=True)
+
+        # # ТЕСТОВЫЕ СТЕНЫ
+        # for (x, y) in [(300, 300), (200, 500), (600, 200)]:
+        #     wall = Wall(x, y, 200, 50)
+        #     self.wall_list.append(wall)
+        #     self.all_sprites.append(wall)
 
     def on_draw(self):
         self.clear()
-        self.text.draw()
         self.all_sprites.draw()
+        self.text.draw()
 
     def on_update(self, delta_time: float):
+        x = self.player.center_x
+        y = self.player.center_y
         self.player.update(delta_time)
+        hit_list = arcade.check_for_collision_with_list(self.player, self.wall_list)
+        if hit_list:
+            self.player.center_x = x
+            self.player.center_y = y
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
             self.window.show_menu()
 
-        if key == arcade.key.UP:
+        elif key == arcade.key.UP:
             self.player.change_y = PLAYER_SPEED
         elif key == arcade.key.DOWN:
             self.player.change_y = -PLAYER_SPEED
