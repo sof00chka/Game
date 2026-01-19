@@ -3,3 +3,5 @@ SCREEN_HEIGHT = 700
 SCREEN_TITLE = "Dynamic Labyrinth: Chrono Shift Game"
 
 BACKGROUND_COLOR = (20, 20, 30)
+
+PLAYER_SPEED = 300

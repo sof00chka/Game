@@ -1,12 +1,14 @@
 import arcade
 
+from scenes.game_scene import GameScene
 from scenes.menu_scene import MenuScene
 from scenes.exit_scene import ExitScene
+from core.constants import SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE
 
 
 class GameWindow(arcade.Window):
     def __init__(self):
-        super().__init__(800, 600, "Chrono Labyrinth")
+        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
 
         self.current_scene = None
         self.show_menu()
@@ -16,7 +18,6 @@ class GameWindow(arcade.Window):
         self.show_view(self.current_scene)
 
     def show_game(self):
-        from scenes.game_scene import GameScene
         self.current_scene = GameScene(self)
         self.show_view(self.current_scene)
 
