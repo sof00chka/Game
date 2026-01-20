@@ -2,7 +2,6 @@ import arcade
 from core.level_manager import LevelManager
 from scenes.base_scene import BaseScene
 from objects.player import Player
-from objects.wall import Wall
 from core.constants import (
     PLAYER_SPEED, SCREEN_WIDTH, SCREEN_HEIGHT,
     WORLD_WIDTH, WORLD_HEIGHT, CAMERA_LERP
@@ -29,12 +28,6 @@ class GameScene(BaseScene):
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list = arcade.SpriteList()
 
-        # # ТЕСТОВЫЕ СТЕНЫ
-        #for (x, y) in [(300, 300), (200, 500), (600, 200)]:
-        #   wall = Wall(x, y, 200, 50)
-        #    self.wall_list.append(wall)
-        #    self.all_sprites.append(wall)
-
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
         self.world_camera.position = (self.player.center_x, self.player.center_y)
@@ -52,6 +45,8 @@ class GameScene(BaseScene):
             16
         )
 
+        self.physics_engine = arcade.PhysicsEngineSimple(self.player, self.wall_list)
+
     def on_draw(self):
         self.clear()
         self.world_camera.use()
@@ -62,13 +57,8 @@ class GameScene(BaseScene):
         self.text.draw()
 
     def on_update(self, delta_time: float):
-        x = self.player.center_x
-        y = self.player.center_y
-        self.player.update(delta_time)
-        hit_list = arcade.check_for_collision_with_list(self.player, self.wall_list)
-        if hit_list:
-            self.player.center_x = x
-            self.player.center_y = y
+        self.physics_engine.update()
+
         cam_x, cam_y = self.world_camera.position
         player_x, player_y = self.player.center_x, self.player.center_y
 
@@ -81,7 +71,6 @@ class GameScene(BaseScene):
             for coin in coins_hit:
                 coin.remove_from_sprite_lists()
 
-            # Переход на следующий уровень
             self.level_index += 1
             if self.level_index > 3:
                 self.level_index = 1
