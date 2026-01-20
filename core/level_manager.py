@@ -1,5 +1,6 @@
 from objects.wall import Wall
 from objects.coin import Coin
+from objects.enemy import Enemy
 
 
 class LevelManager:
@@ -20,6 +21,7 @@ class LevelManager:
             coins = [
                 Coin(900, 300)
             ]
+            enemies = [ Enemy(800, 250)]
 
         elif level_number == 2:
             spawn_point = (150, 150)  # ← безопасная зона
@@ -30,6 +32,7 @@ class LevelManager:
             coins = [
                 Coin(900, 700)
             ]
+            enemies = [Enemy(800, 250)]
 
         elif level_number == 3:
             spawn_point = (150, 150)  # безопасный старт в углу
@@ -47,5 +50,6 @@ class LevelManager:
             coins = [
                 Coin(1200, 350)
             ]
+            enemies = [Enemy(800, 250)]
 
-        return walls, coins, spawn_point
+        return walls, coins, enemies, spawn_point

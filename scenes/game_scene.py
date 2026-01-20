@@ -27,6 +27,7 @@ class GameScene(BaseScene):
 
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list = arcade.SpriteList()
+        self.enemy_list = arcade.SpriteList()
 
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
@@ -58,6 +59,15 @@ class GameScene(BaseScene):
 
     def on_update(self, delta_time: float):
         self.physics_engine.update()
+
+        enemies_hit = arcade.check_for_collision_with_list(
+            self.player,
+            self.enemy_list
+        )
+
+        if enemies_hit:
+            self.window.show_menu()
+            return
 
         cam_x, cam_y = self.world_camera.position
         player_x, player_y = self.player.center_x, self.player.center_y
@@ -112,12 +122,13 @@ class GameScene(BaseScene):
     def load_level(self, level_number):
         self.wall_list.clear()
         self.coin_list.clear()
+        self.enemy_list.clear()
 
         for sprite in self.all_sprites[:]:
             if sprite != self.player:
                 sprite.remove_from_sprite_lists()
 
-        walls, coins, spawn_point = self.level_manager.load_level(level_number)
+        walls, coins, enemies, spawn_point = self.level_manager.load_level(level_number)
 
         for wall in walls:
             self.wall_list.append(wall)
@@ -126,6 +137,10 @@ class GameScene(BaseScene):
         for coin in coins:
             self.coin_list.append(coin)
             self.all_sprites.append(coin)
+
+        for enemy in enemies:
+            self.enemy_list.append(enemy)
+            self.all_sprites.append(enemy)
 
         self.player.center_x, self.player.center_y = spawn_point
         self.world_camera.position = spawn_point
