@@ -124,6 +124,10 @@ class GameScene(BaseScene):
         self.wall_list.clear()
         self.coin_list.clear()
 
+        for sprite in self.all_sprites[:]:
+            if sprite != self.player:
+                sprite.remove_from_sprite_lists()
+
         walls, coins, spawn_point = self.level_manager.load_level(level_number)
 
         for wall in walls:
