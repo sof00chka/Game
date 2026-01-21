@@ -16,10 +16,10 @@ class GameScene(BaseScene):
 
         self.text = arcade.Text(
             "GAME SCENE\nESC - Pause",
-            400,
-            300,
+            SCREEN_WIDTH // 2,
+            SCREEN_HEIGHT // 2,
             arcade.color.WHITE,
-            font_size=20,
+            font_size=70,
             anchor_x="center",
             anchor_y="center"
         )
@@ -65,7 +65,6 @@ class GameScene(BaseScene):
 
     # ---------------- Рисование ----------------
 
-
     def on_draw(self):
         self.clear()
 
@@ -88,7 +87,14 @@ class GameScene(BaseScene):
         if self.paused:
             return
 
-        self.physics_engine.update()
+        if len(self.coin_list) > 0:
+            self.physics_engine.update()
+            for sprite in self.exit_list:
+                if arcade.check_for_collision(self.player, sprite):
+                    self.player.change_x = 0
+                    self.player.change_y = 0
+        else:
+            self.physics_engine.update()
 
         # --- столкновение с врагами ---
         enemies_hit = arcade.check_for_collision_with_list(
@@ -114,6 +120,21 @@ class GameScene(BaseScene):
                 coin.remove_from_sprite_lists()
                 self.score += 10
 
+        # --- камера ---
+        cam_x, cam_y = self.world_camera.position
+        px, py = self.player.center_x, self.player.center_y
+
+        smooth_x = cam_x + (px - cam_x) * CAMERA_LERP
+        smooth_y = cam_y + (py - cam_y) * CAMERA_LERP
+
+        half_w = SCREEN_WIDTH // 2
+        half_h = SCREEN_HEIGHT // 2
+
+        smooth_x = max(half_w, min(WORLD_WIDTH - half_w, smooth_x))
+        smooth_y = max(half_h, min(WORLD_HEIGHT - half_h, smooth_y))
+
+        self.world_camera.position = (smooth_x, smooth_y)
+
         # --- портал (ТОЛЬКО если монет нет) ---
         exit_hit = arcade.check_for_collision_with_list(
             self.player, self.exit_list
@@ -130,21 +151,6 @@ class GameScene(BaseScene):
             self.level_index += 1
             self.load_level(self.level_index)
             return
-
-        # --- камера ---
-        cam_x, cam_y = self.world_camera.position
-        px, py = self.player.center_x, self.player.center_y
-
-        smooth_x = cam_x + (px - cam_x) * CAMERA_LERP
-        smooth_y = cam_y + (py - cam_y) * CAMERA_LERP
-
-        half_w = SCREEN_WIDTH // 2
-        half_h = SCREEN_HEIGHT // 2
-
-        smooth_x = max(half_w, min(WORLD_WIDTH - half_w, smooth_x))
-        smooth_y = max(half_h, min(WORLD_HEIGHT - half_h, smooth_y))
-
-        self.world_camera.position = (smooth_x, smooth_y)
 
     # ---------------- Кнопки ----------------
 
