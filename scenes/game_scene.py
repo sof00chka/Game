@@ -1,5 +1,5 @@
 import arcade
-from core.level_manager import LevelManager
+import os
 from scenes.base_scene import BaseScene
 from objects.player import Player
 from core.constants import (
@@ -28,12 +28,12 @@ class GameScene(BaseScene):
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list = arcade.SpriteList()
         self.enemy_list = arcade.SpriteList()
+        self.exit_list = arcade.SpriteList()
 
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
         self.world_camera.position = (self.player.center_x, self.player.center_y)
 
-        self.level_manager = LevelManager()
         self.level_index = 1
 
         self.load_level(self.level_index)
@@ -72,14 +72,23 @@ class GameScene(BaseScene):
         cam_x, cam_y = self.world_camera.position
         player_x, player_y = self.player.center_x, self.player.center_y
 
-        coins_hit = arcade.check_for_collision_with_list(
+        coin_hit = arcade.check_for_collision_with_list(
             self.player,
             self.coin_list
         )
 
-        if coins_hit:
-            for coin in coins_hit:
-                coin.remove_from_sprite_lists()
+        if coin_hit:
+            for c in coin_hit:
+                c.remove_from_sprite_lists()
+
+        coin_hit = arcade.check_for_collision_with_list(
+            self.player,
+            self.exit_list
+        )
+
+        if coin_hit:
+            for c in coin_hit:
+                c.remove_from_sprite_lists()
 
             self.level_index += 1
             if self.level_index > 3:
@@ -123,27 +132,44 @@ class GameScene(BaseScene):
         self.wall_list.clear()
         self.coin_list.clear()
         self.enemy_list.clear()
+        self.exit_list.clear()
 
         for sprite in self.all_sprites[:]:
             if sprite != self.player:
                 sprite.remove_from_sprite_lists()
 
-        walls, coins, enemies, spawn_point = self.level_manager.load_level(level_number)
+        map_name = f"level{level_number}.tmx"
+        map_path = os.path.join("resources", map_name)
 
-        for wall in walls:
-            self.wall_list.append(wall)
+        tile_map = arcade.load_tilemap(map_path, scaling=1.0)
+
+        if "walls" in tile_map.sprite_lists:
+            self.wall_list = tile_map.sprite_lists["walls"]
+
+        if "coins" in tile_map.sprite_lists:
+            self.coin_list = tile_map.sprite_lists["coins"]
+
+        if "lava" in tile_map.sprite_lists:
+            lava_list = tile_map.sprite_lists["lava"]
+            for lava in lava_list:
+                self.enemy_list.append(lava)
+
+        if "exit" in tile_map.sprite_lists:
+            self.exit_list = tile_map.sprite_lists["exit"]
+
+        for wall in self.wall_list:
             self.all_sprites.append(wall)
 
-        for coin in coins:
-            self.coin_list.append(coin)
+        for coin in self.coin_list:
             self.all_sprites.append(coin)
 
-        for enemy in enemies:
-            self.enemy_list.append(enemy)
+        for enemy in self.enemy_list:
             self.all_sprites.append(enemy)
 
-        self.player.center_x, self.player.center_y = spawn_point
-        self.world_camera.position = spawn_point
+        for exit in self.exit_list:
+            self.all_sprites.append(exit)
 
-
-
+        self.player.center_x = SCREEN_WIDTH // 2
+        self.player.center_y = SCREEN_HEIGHT // 2
+        self.world_camera.position = (self.player.center_x, self.player.center_y)
+        self.physics_engine = arcade.PhysicsEngineSimple(self.player, self.wall_list)
