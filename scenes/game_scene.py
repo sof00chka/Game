@@ -9,6 +9,9 @@ from core.constants import (
     MAX_LEVEL
 )
 
+from objects.dynamic_elements import RotatingWallSection
+from core.maze_manager import MazeManager
+
 
 class GameScene(BaseScene):
     def __init__(self, window):
@@ -57,6 +60,16 @@ class GameScene(BaseScene):
             16
         )
 
+        self.rotation_timer_text = arcade.Text(
+            "",
+            SCREEN_WIDTH - 20,
+            SCREEN_HEIGHT - 80,
+            arcade.color.YELLOW,
+            16,
+            anchor_x="right"
+        )
+
+        self.maze_manager = MazeManager()
         self.load_level(self.level_index)
 
         self.physics_engine = arcade.PhysicsEngineSimple(
@@ -78,6 +91,11 @@ class GameScene(BaseScene):
         self.ui_text.text = f"Score: {self.score}   Lives: {self.player.lives}"
         self.ui_text.draw()
 
+        if not self.paused:
+            remaining_time = self.maze_manager.get_remaining_time()
+            self.rotation_timer_text.text = f"Rotation in: {remaining_time:.0f}s"
+            self.rotation_timer_text.draw()
+
         if self.paused:
             self.text.draw()
 
@@ -95,6 +113,30 @@ class GameScene(BaseScene):
                     self.player.change_y = 0
         else:
             self.physics_engine.update()
+
+        self.maze_manager.update(delta_time)
+
+        rotated_count = 0
+        for section in self.maze_manager.rotating_sections:
+            if section.should_rotate:
+                section.rotate_section()
+                rotated_count += 1
+
+        if rotated_count > 0:
+            self.physics_engine = arcade.PhysicsEngineSimple(
+                self.player, self.wall_list
+            )
+            wall_hit = arcade.check_for_collision_with_list(
+                self.player, self.wall_list
+            )
+            if wall_hit:
+                self.player.lives -= 1
+                self.player.center_x = SCREEN_WIDTH // 2
+                self.player.center_y = SCREEN_HEIGHT // 2
+
+                if self.player.lives <= 0:
+                    self.window.show_lose()
+                    return
 
         # --- столкновение с врагами ---
         enemies_hit = arcade.check_for_collision_with_list(
@@ -141,7 +183,6 @@ class GameScene(BaseScene):
         )
 
         if exit_hit and len(self.coin_list) == 0:
-
             # если последний уровень — победа
             if self.level_index == MAX_LEVEL:
                 self.window.show_win()
@@ -158,6 +199,9 @@ class GameScene(BaseScene):
         if key == arcade.key.ESCAPE:
             self.paused = not self.paused
             return
+
+        if key == arcade.key.R and not self.paused:
+            self.maze_manager.rotate_random_sections()
 
         if self.paused:
             return
@@ -180,10 +224,12 @@ class GameScene(BaseScene):
     # ---------------- Загрузка уровней ----------------
 
     def load_level(self, level_number):
-        self.wall_list.clear()
+        self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list.clear()
         self.enemy_list.clear()
         self.exit_list.clear()
+
+        self.maze_manager.rotating_sections.clear()
 
         for sprite in self.all_sprites[:]:
             if sprite != self.player:
@@ -195,20 +241,44 @@ class GameScene(BaseScene):
         tile_map = arcade.load_tilemap(map_path, scaling=1.0)
 
         if "walls" in tile_map.sprite_lists:
-            self.wall_list = tile_map.sprite_lists["walls"]
+            wall_sprites = tile_map.sprite_lists["walls"]
+            for sprite in wall_sprites:
+                if sprite.texture is not None:
+                    self.wall_list.append(sprite)
+                    self.all_sprites.append(sprite)
+
+        if "rotating_walls" in tile_map.sprite_lists:
+            rotating_sprites = tile_map.sprite_lists["rotating_walls"]
+            rotating_tiles = [s for s in rotating_sprites if s.texture is not None]
+
+            if rotating_tiles:
+                sections = self.group_sect(rotating_tiles)
+
+                for section_tiles in sections:
+                    section = RotatingWallSection(section_tiles)
+
+                    for tile in section_tiles:
+                        self.remove_wall(tile.center_x, tile.center_y)
+
+                        self.wall_list.append(tile)
+                        self.all_sprites.append(tile)
+
+                    self.maze_manager.add_rotating_section(section)
 
         if "coins" in tile_map.sprite_lists:
             self.coin_list = tile_map.sprite_lists["coins"]
+            for coin in self.coin_list:
+                self.all_sprites.append(coin)
 
         if "lava" in tile_map.sprite_lists:
             self.enemy_list.extend(tile_map.sprite_lists["lava"])
+            for enemy in self.enemy_list:
+                self.all_sprites.append(enemy)
 
         if "exit" in tile_map.sprite_lists:
             self.exit_list = tile_map.sprite_lists["exit"]
-
-        for lst in (self.wall_list, self.coin_list, self.enemy_list, self.exit_list):
-            for sprite in lst:
-                self.all_sprites.append(sprite)
+            for exit_sprite in self.exit_list:
+                self.all_sprites.append(exit_sprite)
 
         self.player.center_x = SCREEN_WIDTH // 2
         self.player.center_y = SCREEN_HEIGHT // 2
@@ -220,3 +290,49 @@ class GameScene(BaseScene):
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player, self.wall_list
         )
+
+    # ---------------- Вспомогательные методы для вращающихся стен ----------------
+
+    def group_sect(self, tiles):
+        sections = []
+        processed = set()
+
+        for tile in tiles:
+            if tile in processed:
+                continue
+
+            current_section = []
+            to_process = [tile]
+
+            while to_process:
+                current = to_process.pop()
+                if current in processed:
+                    continue
+
+                processed.add(current)
+                current_section.append(current)
+
+                for other in tiles:
+                    if other in processed:
+                        continue
+
+                    dx = abs(current.center_x - other.center_x)
+                    dy = abs(current.center_y - other.center_y)
+
+                    if dx < 34 and dy < 34:
+                        to_process.append(other)
+
+            if current_section:
+                sections.append(current_section)
+
+        return sections
+
+    def remove_wall(self, x, y):
+        for wall in self.wall_list[:]:
+            if (abs(wall.center_x - x) < 1 and
+                    abs(wall.center_y - y) < 1):
+                self.wall_list.remove(wall)
+                if wall in self.all_sprites:
+                    self.all_sprites.remove(wall)
+                return True
+        return False
