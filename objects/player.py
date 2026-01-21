@@ -12,3 +12,5 @@ class Player(arcade.Sprite):
         self.change_x = 0
         self.change_y = 0
 
+        self.lives = 3
+

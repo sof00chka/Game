@@ -4,6 +4,9 @@ from scenes.game_scene import GameScene
 from scenes.menu_scene import MenuScene
 from scenes.exit_scene import ExitScene
 from core.constants import SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE
+from scenes.win_scene import WinScene
+from scenes.lose_scene import LoseScene
+
 
 
 class GameWindow(arcade.Window):
@@ -28,3 +31,10 @@ class GameWindow(arcade.Window):
     def on_update(self, delta_time: float):
         if self.current_scene:
             self.current_scene.on_update(delta_time)
+
+    def show_win(self):
+        self.show_view(WinScene(self))
+
+    def show_lose(self):
+        self.show_view(LoseScene(self))
+
