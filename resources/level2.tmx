@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="45" height="26" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="1">
  <tileset firstgid="1" source="tiles_spritesheet.tsx"/>
- <tileset firstgid="813" source="../../../Downloads/cash.tsx"/>
+ <tileset firstgid="813" source="cash.tsx"/>
  <layer id="1" name="walls" width="45" height="26">
   <data encoding="csv">
 198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,198,393,198,198,198,198,198,198,198,198,198,198,
