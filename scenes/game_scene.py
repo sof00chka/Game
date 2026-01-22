@@ -1,20 +1,21 @@
 import arcade
 import os
 
+from scenes.pause_scene import PauseScene
 from scenes.base_scene import BaseScene
 from objects.player import Player
 from core.constants import (
     PLAYER_SPEED, SCREEN_WIDTH, SCREEN_HEIGHT,
-    WORLD_WIDTH, WORLD_HEIGHT, CAMERA_LERP,
-    MAX_LEVEL
+    WORLD_WIDTH, WORLD_HEIGHT, CAMERA_LERP
 )
+
 
 from objects.dynamic_elements import RotatingWallSection
 from core.maze_manager import MazeManager
 
 
 class GameScene(BaseScene):
-    def __init__(self, window):
+    def __init__(self, window, big_level=1):
         super().__init__(window)
 
         self.background = arcade.load_texture("resources/background.png")
@@ -42,9 +43,7 @@ class GameScene(BaseScene):
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
 
-        self.level_index = 1
         self.score = 0
-        self.paused = False
 
         self.level_text = arcade.Text(
             "",
@@ -72,11 +71,27 @@ class GameScene(BaseScene):
         )
 
         self.maze_manager = MazeManager()
-        self.load_level(self.level_index)
+        self.maze_manager = MazeManager()
+
+        self.big_level = big_level
+        self.sub_level = 1
+        self.max_sub_levels = {
+            1: 3,
+            2: 4
+        }
+
+        self.load_level()
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player, self.wall_list
         )
+
+        self.physics_engine = arcade.PhysicsEngineSimple(
+            self.player, self.wall_list
+        )
+
+        self.game_music = arcade.Sound("resources/music/game.mp3")
+        self.music_player = None
 
     # ---------------- Рисование ----------------
 
@@ -91,25 +106,15 @@ class GameScene(BaseScene):
         self.all_sprites.draw()
 
         self.gui_camera.use()
-        self.level_text.text = f"Level: {self.level_index}"
+        self.level_text.text = f"Level: {self.big_level}-{self.sub_level}"
         self.level_text.draw()
 
         self.ui_text.text = f"Score: {self.score}   Lives: {self.player.lives}"
         self.ui_text.draw()
 
-        if not self.paused:
-            remaining_time = self.maze_manager.get_remaining_time()
-            self.rotation_timer_text.text = f"Rotation in: {remaining_time:.0f}s"
-            self.rotation_timer_text.draw()
-
-        if self.paused:
-            self.text.draw()
-
     # ---------------- Обновление ----------------
 
     def on_update(self, delta_time: float):
-        if self.paused:
-            return
 
         if len(self.coin_list) > 0:
             self.physics_engine.update()
@@ -189,28 +194,19 @@ class GameScene(BaseScene):
         )
 
         if exit_hit and len(self.coin_list) == 0:
-            # если последний уровень — победа
-            if self.level_index == MAX_LEVEL:
-                self.window.show_win()
-                return
-
-            # иначе следующий уровень
-            self.level_index += 1
-            self.load_level(self.level_index)
+            self.go_to_next_sub_level()
             return
 
     # ---------------- Кнопки ----------------
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
-            self.paused = not self.paused
+            pause_scene = PauseScene(self.window, self)
+            self.window.show_view(pause_scene)
             return
 
-        if key == arcade.key.R and not self.paused:
+        if key == arcade.key.R:
             self.maze_manager.rotate_random_sections()
-
-        if self.paused:
-            return
 
         if key == arcade.key.UP:
             self.player.change_y = PLAYER_SPEED
@@ -229,7 +225,7 @@ class GameScene(BaseScene):
 
     # ---------------- Загрузка уровней ----------------
 
-    def load_level(self, level_number):
+    def load_level(self):
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list.clear()
         self.enemy_list.clear()
@@ -241,8 +237,7 @@ class GameScene(BaseScene):
             if sprite != self.player:
                 sprite.remove_from_sprite_lists()
 
-        map_name = f"level{level_number}.tmx"
-        map_path = os.path.join("resources", map_name)
+        map_path = f"resources/maps/big{self.big_level}_level{self.sub_level}.tmx"
 
         tile_map = arcade.load_tilemap(map_path, scaling=1.0)
 
@@ -342,3 +337,29 @@ class GameScene(BaseScene):
                     self.all_sprites.remove(wall)
                 return True
         return False
+
+    def on_show_view(self):
+        if self.music_player is None:
+            self.music_player = self.game_music.play(loop=True, volume=0.4)
+
+    def on_hide_view(self):
+        if self.music_player:
+            self.music_player.pause()
+            self.music_player = None
+
+    def go_to_next_sub_level(self):
+        # если есть следующий подуровень
+        if self.sub_level < 3:
+            self.sub_level += 1
+            self.load_level()
+        else:
+            # если подуровни закончились — победа
+            self.window.show_win()
+
+    def on_big_level_complete(self):
+        # разблокировать следующий большой уровень
+        self.window.unlock_big_level(self.big_level + 1)
+
+        # вернуть игрока в меню
+        self.window.show_menu()
+

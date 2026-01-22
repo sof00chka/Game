@@ -18,7 +18,7 @@ class PauseScene(BaseScene):
         )
 
         self.resume_text = arcade.Text(
-            "ENTER - Continue",
+            "[ ENTER ]  Continue",
             SCREEN_WIDTH // 2,
             SCREEN_HEIGHT // 2,
             arcade.color.WHITE,
@@ -27,7 +27,7 @@ class PauseScene(BaseScene):
         )
 
         self.menu_text = arcade.Text(
-            "ESC - Main Menu",
+            "[ ESC ]  Main Menu",
             SCREEN_WIDTH // 2,
             SCREEN_HEIGHT // 2 - 40,
             arcade.color.WHITE,
@@ -35,51 +35,39 @@ class PauseScene(BaseScene):
             anchor_x="center"
         )
 
+        if self.game_scene.music_player:
+            self.game_scene.music_player.pause()
+
+        self.game_scene.music_player = self.game_scene.game_music.play(
+            loop=True, volume=0.4
+        )
+
     def on_draw(self):
-        # рисуем игру под паузой
+        # Рисуем замороженную игру
         self.game_scene.on_draw()
 
-        # затемнение
-        arcade.draw_rectangle_filled(
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2,
-            SCREEN_WIDTH,
-            SCREEN_HEIGHT,
-            (0, 0, 0, 180)
+        # Затемнение
+        arcade.draw.draw_rect_filled(
+            arcade.rect.XYWH(
+                SCREEN_WIDTH // 2,
+                SCREEN_HEIGHT // 2,
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT
+            ),
+            arcade.color.BLACK
         )
 
         self.title_text.draw()
         self.resume_text.draw()
         self.menu_text.draw()
-        if self.paused:
-            arcade.draw_rectangle_filled(
-                SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2,
-                SCREEN_WIDTH,
-                SCREEN_HEIGHT,
-                (0, 0, 0, 180)
-            )
-
-            arcade.draw_text(
-                "PAUSE",
-                SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2 + 40,
-                arcade.color.WHITE,
-                32,
-                anchor_x="center"
-            )
-
-            arcade.draw_text(
-                "ESC - Continue",
-                SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2 - 10,
-                arcade.color.WHITE,
-                16,
-                anchor_x="center"
-            )
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ENTER:
-            self.window.show_scene(self.game_scene)
+            # Возвращаемся в игру
+            self.window.show_view(self.game_scene)
+
         elif key == arcade.key.ESCAPE:
+            # В главное меню
             self.window.show_menu()
+
+

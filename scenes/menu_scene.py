@@ -47,6 +47,7 @@ class MenuScene(BaseScene):
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ENTER:
-            self.window.show_game()
+            self.window.show_level_select()
+
         elif key == arcade.key.ESCAPE:
             self.window.show_exit()
