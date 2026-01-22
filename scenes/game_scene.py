@@ -17,6 +17,8 @@ class GameScene(BaseScene):
     def __init__(self, window):
         super().__init__(window)
 
+        self.background = arcade.load_texture("resources/background.png")
+
         self.text = arcade.Text(
             "GAME SCENE\nESC - Pause",
             SCREEN_WIDTH // 2,
@@ -82,6 +84,10 @@ class GameScene(BaseScene):
         self.clear()
 
         self.world_camera.use()
+
+        arcade.draw_texture_rect(self.background, arcade.rect.XYWH(
+            WORLD_WIDTH // 2, WORLD_HEIGHT // 2, WORLD_WIDTH, WORLD_HEIGHT))
+
         self.all_sprites.draw()
 
         self.gui_camera.use()
