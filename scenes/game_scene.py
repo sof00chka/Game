@@ -9,7 +9,6 @@ from core.constants import (
     WORLD_WIDTH, WORLD_HEIGHT, CAMERA_LERP
 )
 
-
 from objects.dynamic_elements import RotatingWallSection
 from core.maze_manager import MazeManager
 
@@ -32,13 +31,15 @@ class GameScene(BaseScene):
 
         self.all_sprites = arcade.SpriteList()
 
+        self.player_sprite = arcade.SpriteList()
         self.player = Player()
-        self.all_sprites.append(self.player)
+        self.player_sprite.append(self.player)
 
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list = arcade.SpriteList()
         self.enemy_list = arcade.SpriteList()
         self.exit_list = arcade.SpriteList()
+        self.teleport_list = arcade.SpriteList()
 
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
@@ -71,7 +72,6 @@ class GameScene(BaseScene):
         )
 
         self.maze_manager = MazeManager()
-        self.maze_manager = MazeManager()
 
         self.big_level = big_level
         self.sub_level = 1
@@ -80,18 +80,27 @@ class GameScene(BaseScene):
             2: 4
         }
 
+        self.teleport_cooldown = 0
+        self.teleport_pairs = {}
+        self.last_teleport = None
+        self.just_teleported = False
+
+        # Загружаем музыку и звуки
+        self.game_music = arcade.Sound("resources/music/game.mp3")
+        self.menu_music = arcade.Sound("resources/music/menu.mp3")
+        self.teleport_sound = arcade.Sound("resources/music/teleport.mp3")
+        self.wall_hit_sound = arcade.Sound("resources/music/move_walls.mp3")
+        self.lava_hit_sound = arcade.Sound("resources/music/lava.mp3")
+        self.coin_sound = arcade.Sound("resources/music/coin.mp3")
+        self.exit_sound = arcade.Sound("resources/music/exit.mp3")
+
+        self.music_player = None
+
         self.load_level()
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player, self.wall_list
         )
-
-        self.physics_engine = arcade.PhysicsEngineSimple(
-            self.player, self.wall_list
-        )
-
-        self.game_music = arcade.Sound("resources/music/game.mp3")
-        self.music_player = None
 
     # ---------------- Рисование ----------------
 
@@ -105,6 +114,8 @@ class GameScene(BaseScene):
 
         self.all_sprites.draw()
 
+        self.player_sprite.draw()
+
         self.gui_camera.use()
         self.level_text.text = f"Level: {self.big_level}-{self.sub_level}"
         self.level_text.draw()
@@ -115,6 +126,17 @@ class GameScene(BaseScene):
     # ---------------- Обновление ----------------
 
     def on_update(self, delta_time: float):
+
+        if self.teleport_cooldown > 0:
+            self.teleport_cooldown -= delta_time
+
+        if self.just_teleported:
+            teleport_hit = arcade.check_for_collision_with_list(
+                self.player, self.teleport_list
+            )
+            if not teleport_hit:
+                self.just_teleported = False
+                self.last_teleport = None
 
         if len(self.coin_list) > 0:
             self.physics_engine.update()
@@ -141,6 +163,8 @@ class GameScene(BaseScene):
                 self.player, self.wall_list
             )
             if wall_hit:
+                self.wall_hit_sound.play(volume=1.0)
+
                 self.player.lives -= 1
                 self.player.center_x = SCREEN_WIDTH // 2
                 self.player.center_y = SCREEN_HEIGHT // 2
@@ -149,12 +173,13 @@ class GameScene(BaseScene):
                     self.window.show_lose()
                     return
 
-        # --- столкновение с врагами ---
         enemies_hit = arcade.check_for_collision_with_list(
             self.player, self.enemy_list
         )
 
         if enemies_hit:
+            self.lava_hit_sound.play(volume=1.0)
+
             self.player.lives -= 1
             self.player.center_x = SCREEN_WIDTH // 2
             self.player.center_y = SCREEN_HEIGHT // 2
@@ -170,10 +195,18 @@ class GameScene(BaseScene):
 
         if coin_hit:
             for coin in coin_hit:
+                self.coin_sound.play()
                 coin.remove_from_sprite_lists()
                 self.score += 10
 
-        # --- камера ---
+        if not self.just_teleported:
+            teleport_hit = arcade.check_for_collision_with_list(
+                self.player, self.teleport_list
+            )
+
+            if teleport_hit:
+                self.handle_teleport(teleport_hit[0])
+
         cam_x, cam_y = self.world_camera.position
         px, py = self.player.center_x, self.player.center_y
 
@@ -194,8 +227,63 @@ class GameScene(BaseScene):
         )
 
         if exit_hit and len(self.coin_list) == 0:
+            self.exit_sound.play()
             self.go_to_next_sub_level()
             return
+
+    # ---------------- Телепорты ----------------
+
+    def handle_teleport(self, teleport_sprite):
+        if self.just_teleported:
+            return
+
+        if teleport_sprite == self.last_teleport:
+            return
+
+        teleport_id = self.get_teleport_id(teleport_sprite)
+
+        if teleport_id in self.teleport_pairs:
+            paired_teleports = self.teleport_pairs[teleport_id]
+
+            for other_teleport in paired_teleports:
+                if other_teleport != teleport_sprite:
+                    self.teleport_sound.play(volume=1.0)
+
+                    self.last_teleport = other_teleport
+                    self.just_teleported = True
+
+                    self.player.center_x = other_teleport.center_x
+                    self.player.center_y = other_teleport.center_y
+
+                    self.teleport_cooldown = 0.3
+                    cam_x, cam_y = self.world_camera.position
+                    smooth_x = cam_x + (self.player.center_x - cam_x) * 0.5
+                    smooth_y = cam_y + (self.player.center_y - cam_y) * 0.5
+
+                    half_w = SCREEN_WIDTH // 2
+                    half_h = SCREEN_HEIGHT // 2
+
+                    smooth_x = max(half_w, min(WORLD_WIDTH - half_w, smooth_x))
+                    smooth_y = max(half_h, min(WORLD_HEIGHT - half_h, smooth_y))
+
+                    self.world_camera.position = (smooth_x, smooth_y)
+                    break
+
+    def get_teleport_id(self, teleport_sprite):
+        if teleport_sprite.texture:
+            return id(teleport_sprite.texture)
+        return 0
+
+    def setup_teleport_pairs(self):
+        self.teleport_pairs.clear()
+
+        for teleport in self.teleport_list:
+            teleport_id = self.get_teleport_id(teleport)
+
+            if teleport_id not in self.teleport_pairs:
+                self.teleport_pairs[teleport_id] = []
+
+            self.teleport_pairs[teleport_id].append(teleport)
 
     # ---------------- Кнопки ----------------
 
@@ -230,6 +318,9 @@ class GameScene(BaseScene):
         self.coin_list.clear()
         self.enemy_list.clear()
         self.exit_list.clear()
+        self.teleport_list.clear()
+        if hasattr(self, 'teleport_pairs'):
+            self.teleport_pairs.clear()
 
         self.maze_manager.rotating_sections.clear()
 
@@ -281,8 +372,20 @@ class GameScene(BaseScene):
             for exit_sprite in self.exit_list:
                 self.all_sprites.append(exit_sprite)
 
+        if "teleports" in tile_map.sprite_lists:
+            self.teleport_list = tile_map.sprite_lists["teleports"]
+            for teleport in self.teleport_list:
+                teleport.scale = 2.0
+                self.all_sprites.append(teleport)
+
+            self.setup_teleport_pairs()
+
         self.player.center_x = SCREEN_WIDTH // 2
         self.player.center_y = SCREEN_HEIGHT // 2
+
+        self.last_teleport = None
+        self.just_teleported = False
+        self.teleport_cooldown = 0
 
         self.world_camera.position = (
             self.player.center_x, self.player.center_y
@@ -348,18 +451,15 @@ class GameScene(BaseScene):
             self.music_player = None
 
     def go_to_next_sub_level(self):
-        # если есть следующий подуровень
         if self.sub_level < 3:
             self.sub_level += 1
             self.load_level()
         else:
-            # если подуровни закончились — победа
             self.window.show_win()
 
     def on_big_level_complete(self):
-        # разблокировать следующий большой уровень
         self.window.unlock_big_level(self.big_level + 1)
-
-        # вернуть игрока в меню
+        if self.music_player:
+            self.music_player.pause()
+            self.music_player = None
         self.window.show_menu()
-
