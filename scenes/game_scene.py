@@ -1,5 +1,4 @@
 import arcade
-import os
 
 from scenes.pause_scene import PauseScene
 from scenes.base_scene import BaseScene
@@ -126,6 +125,8 @@ class GameScene(BaseScene):
     # ---------------- Обновление ----------------
 
     def on_update(self, delta_time: float):
+
+        self.player.update(delta_time)
 
         if self.teleport_cooldown > 0:
             self.teleport_cooldown -= delta_time
