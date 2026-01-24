@@ -68,6 +68,6 @@ class PauseScene(BaseScene):
 
         elif key == arcade.key.ESCAPE:
             # В главное меню
-            self.window.show_menu()
+            self.window.show_level_select()
 
 

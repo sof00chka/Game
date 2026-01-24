@@ -55,7 +55,7 @@ class WinScene(BaseScene):
             if key == arcade.key.ENTER:
                 self.window.show_game(self.big_level + 1)
             elif key == arcade.key.M:
-                self.window.show_menu()
+                self.window.show_level_select()
             elif key == arcade.key.ESCAPE:
                 arcade.exit()
 

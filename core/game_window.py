@@ -19,7 +19,7 @@ class GameWindow(arcade.Window):
 
         self.current_scene = None
         self.show_menu()
-        self.unlocked_big_levels = {1}
+        self.unlocked_big_levels = set()
 
     def show_menu(self):
         if self.menu_music_player:
