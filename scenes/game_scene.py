@@ -84,7 +84,6 @@ class GameScene(BaseScene):
         self.last_teleport = None
         self.just_teleported = False
 
-        # Загружаем музыку и звуки
         self.game_music = arcade.Sound("resources/music/game.mp3")
         self.menu_music = arcade.Sound("resources/music/menu.mp3")
         self.teleport_music = arcade.Sound("resources/music/teleport.mp3")
@@ -458,6 +457,14 @@ class GameScene(BaseScene):
             self.sub_level += 1
             self.load_level()
         else:
+            if self.window.current_user:
+                completed_big_level = self.big_level
+                if completed_big_level > self.window.current_user['level']:
+                    self.window.db.update_user_progress(
+                        self.window.current_user['username'],
+                        completed_big_level
+                    )
+                    self.window.current_user['level'] = completed_big_level
             self.window.unlock_big_level(self.big_level)
             self.window.show_win(self.big_level)
 

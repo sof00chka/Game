@@ -19,7 +19,7 @@ class LevelSelectScene(BaseScene):
         self.error_text = arcade.Text(
             "",
             window.width // 2,
-            100,
+            155,
             arcade.color.RED,
             16,
             anchor_x="center",
@@ -44,14 +44,18 @@ class LevelSelectScene(BaseScene):
         )
 
         self.current_available_level = 1
-        max_unlocked = 0
-        for level in range(1, MAX_BIG_LEVEL + 1):
-            if level in window.unlocked_big_levels:
-                max_unlocked = level
-        if max_unlocked < MAX_BIG_LEVEL:
-            self.current_available_level = max_unlocked
+
+        if window.current_user:
+            self.current_available_level = window.current_user['level']
         else:
-            self.current_available_level = MAX_BIG_LEVEL
+            max_unlocked = 0
+            for level in range(1, MAX_BIG_LEVEL + 1):
+                if level in window.unlocked_big_levels:
+                    max_unlocked = level
+            if max_unlocked < MAX_BIG_LEVEL:
+                self.current_available_level = max_unlocked
+            else:
+                self.current_available_level = MAX_BIG_LEVEL
 
         self.buttons = []
         w = 300

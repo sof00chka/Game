@@ -4,24 +4,45 @@ from scenes.game_scene import GameScene
 from scenes.level_select_scene import LevelSelectScene
 from scenes.menu_scene import MenuScene
 from scenes.exit_scene import ExitScene
-from core.constants import SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE
 from scenes.win_scene import WinScene
 from scenes.lose_scene import LoseScene
+from scenes.login_scene import LoginScene
+from scenes.leaderboard_scene import LeaderboardScene
 
+from core.constants import SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE
+from core.database import Database
 
 
 class GameWindow(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
 
+        self.db = Database()
+        self.current_user = None
+
         self.menu_music = arcade.Sound("resources/music/menu.mp3")
         self.menu_music_player = self.menu_music.play(loop=True, volume=0.5)
 
         self.current_scene = None
-        self.show_menu()
         self.unlocked_big_levels = set()
 
+        self.show_login()
+
+    def show_login(self):
+        if self.menu_music_player:
+            self.menu_music_player.play()
+        self.show_view(LoginScene(self))
+
+    def show_leaderboard(self):
+        self.show_view(LeaderboardScene(self))
+
     def show_menu(self):
+        if self.current_user:
+            self.unlocked_big_levels.clear()
+            for level in range(1, self.current_user['level'] + 1):
+                self.unlocked_big_levels.add(level)
+            self.unlocked_big_levels.add(self.current_user['level'] + 1)
+
         if self.menu_music_player:
             self.menu_music_player.play()
 
