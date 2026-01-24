@@ -1,4 +1,5 @@
 import arcade
+import arcade.gui
 from scenes.base_scene import BaseScene
 from core.database import Database
 
@@ -9,164 +10,189 @@ class LoginScene(BaseScene):
         self.db = Database()
         self.mode = "login"
 
-        self.title_text = arcade.Text(
-            "CHRONO LABYRINTH",
-            window.width // 2,
-            window.height - 100,
-            arcade.color.WHITE,
-            font_size=40,
-            anchor_x="center"
+        self.manager = arcade.gui.UIManager()
+        self.manager.enable()
+
+        self.main_box = arcade.gui.UIBoxLayout(vertical=True, space_between=25)
+
+        title_label = arcade.gui.UILabel(
+            text="CHRONO LABYRINTH",
+            font_size=48,
+            font_name="Arial",
+            text_color=arcade.color.WHITE
         )
+        self.main_box.add(title_label)
 
-        self.mode_text = arcade.Text(
-            "ВХОД",
-            window.width // 2,
-            window.height - 180,
-            arcade.color.WHITE,
-            font_size=30,
-            anchor_x="center"
+        self.mode_label = arcade.gui.UILabel(
+            text="ВХОД В ИГРУ",
+            font_size=32,
+            text_color=arcade.color.YELLOW
         )
+        self.main_box.add(self.mode_label)
 
-        self.username = ""
-        self.password = ""
-        self.active_field = "username"
-
-        self.message = ""
-        self.message_color = arcade.color.WHITE
-
-        self.instructions = arcade.Text(
-            "[TAB] - переключить поле\n"
-            "[ENTER] - подтвердить\n"
-            "[SHIFT] - переключить режим (Вход/Регистрация)\n"
-            "[ESC] - выйти",
-            window.width // 2,
-            100,
-            arcade.color.LIGHT_GRAY,
-            font_size=16,
-            anchor_x="center",
-            anchor_y="center",
-            multiline=True,
+        login_container = arcade.gui.UIBoxLayout(vertical=True, space_between=10)
+        login_text_label = arcade.gui.UILabel(
+            text="ЛОГИН:",
+            font_size=24,
+            text_color=arcade.color.WHITE
+        )
+        login_container.add(login_text_label)
+        self.username_input = arcade.gui.UIInputText(
+            text="",
             width=400,
+            height=50,
+            font_size=20
+        )
+        login_container.add(self.username_input)
+        self.main_box.add(login_container)
+
+        password_container = arcade.gui.UIBoxLayout(vertical=True, space_between=10)
+        password_text_label = arcade.gui.UILabel(
+            text="ПАРОЛЬ:",
+            font_size=24,
+            text_color=arcade.color.WHITE
+        )
+        password_container.add(password_text_label)
+        self.password_input = arcade.gui.UIInputText(
+            text="",
+            width=400,
+            height=50,
+            font_size=20,
+            password=True
+        )
+        password_container.add(self.password_input)
+        self.main_box.add(password_container)
+
+        buttons_box = arcade.gui.UIBoxLayout(vertical=False, space_between=30)
+        self.login_button = arcade.gui.UIFlatButton(
+            text="ВОЙТИ",
+            width=180,
+            height=60,
+            font_size=24
+        )
+        self.login_button.on_click = self.on_login_click
+        buttons_box.add(self.login_button)
+        self.register_button = arcade.gui.UIFlatButton(
+            text="РЕГИСТРАЦИЯ",
+            width=180,
+            height=60,
+            font_size=24
+        )
+        self.register_button.on_click = self.on_register_click
+        buttons_box.add(self.register_button)
+        self.main_box.add(buttons_box)
+
+        message_container = arcade.gui.UIAnchorLayout(width=500, height=60)
+        self.message_label = arcade.gui.UILabel(
+            text="",
+            font_size=20,
+            text_color=arcade.color.RED_DEVIL,
+            width=500,
             align="center"
         )
+        message_container.add(self.message_label, anchor_x="center", anchor_y="center")
+        self.main_box.add(message_container)
+
+        instructions_label = arcade.gui.UILabel(
+            text="[TAB] - сменить режим (вход/регистрация)\n"
+                 "[ENTER] - подтвердить\n"
+                 "[ESC] - выход из игры",
+            font_size=18,
+            text_color=arcade.color.LIGHT_GRAY,
+            width=500,
+            multiline=True,
+            align="center"
+        )
+        self.main_box.add(instructions_label)
+
+        anchor = arcade.gui.UIAnchorLayout()
+        anchor.add(self.main_box)
+        self.manager.add(anchor)
+
+        self.current_input = self.username_input
 
     def on_draw(self):
         self.clear(arcade.color.BLACK)
+        self.manager.draw()
 
-        self.title_text.draw()
-        self.mode_text.draw()
-        self.instructions.draw()
+    def on_login_click(self, event):
+        self.process_login()
 
-        username_label = "Логин:"
-        password_label = "Пароль:"
+    def on_register_click(self, event):
+        self.process_register()
 
-        username_color = arcade.color.YELLOW if self.active_field == "username" else arcade.color.WHITE
-        arcade.Text(
-            f"{username_label} {self.username}",
-            self.window.width // 2,
-            self.window.height // 2 + 40,
-            username_color,
-            font_size=24,
-            anchor_x="center",
-            anchor_y="center"
-        ).draw()
+    def process_login(self):
+        username = self.username_input.text.strip()
+        password = self.password_input.text.strip()
 
-        password_color = arcade.color.YELLOW if self.active_field == "password" else arcade.color.WHITE
-        arcade.Text(
-            f"{password_label} {'*' * len(self.password)}",
-            self.window.width // 2,
-            self.window.height // 2 - 20,
-            password_color,
-            font_size=24,
-            anchor_x="center",
-            anchor_y="center"
-        ).draw()
+        if not username or not password:
+            self.show_message("Заполните все поля!", arcade.color.RED)
+            return
 
-        if self.message:
-            arcade.Text(
-                self.message,
-                self.window.width // 2,
-                self.window.height // 2 - 80,
-                self.message_color,
-                font_size=20,
-                anchor_x="center",
-                anchor_y="center"
-            ).draw()
+        user = self.db.login_user(username, password)
+        if user:
+            self.show_message(f"Добро пожаловать, {username}!", arcade.color.GREEN)
+            self.window.current_user = {
+                'username': username,
+                'level': user['level']
+            }
+            arcade.schedule(self.show_menu, 1.0)
+        else:
+            self.show_message("Неверный логин или пароль!", arcade.color.RED)
+
+    def process_register(self):
+        username = self.username_input.text.strip()
+        password = self.password_input.text.strip()
+
+        if not username or not password:
+            self.show_message("Заполните все поля!", arcade.color.RED)
+            return
+
+        success = self.db.register_user(username, password)
+        if success:
+            self.show_message(f"Пользователь {username} зарегистрирован!",
+                              arcade.color.GREEN)
+            user = self.db.login_user(username, password)
+            if user:
+                self.window.current_user = {
+                    'username': username,
+                    'level': user['level']
+                }
+                arcade.schedule(self.show_menu, 1.0)
+        else:
+            self.show_message("Пользователь с таким именем уже существует!",
+                              arcade.color.RED)
+
+    def show_message(self, message, color):
+        self.message_label.text = message
+        self.message_label.text_color = color
+
+    def show_menu(self, delta_time):
+        arcade.unschedule(self.show_menu)
+        self.window.show_menu()
 
     def on_key_press(self, key, modifiers):
-        if key == arcade.key.LSHIFT or key == arcade.key.RSHIFT:
+        if key == arcade.key.TAB:
             if self.mode == "login":
                 self.mode = "register"
-                self.mode_text.text = "РЕГИСТРАЦИЯ"
-                self.message = ""
+                self.mode_label.text = "РЕГИСТРАЦИЯ"
+                self.mode_label.text_color = arcade.color.CYAN
             else:
                 self.mode = "login"
-                self.mode_text.text = "ВХОД"
-                self.message = ""
-            return
-
-        if key == arcade.key.TAB:
-            if self.active_field == "username":
-                self.active_field = "password"
-            else:
-                self.active_field = "username"
-            return
-
-        if key == arcade.key.BACKSPACE:
-            if self.active_field == "username" and self.username:
-                self.username = self.username[:-1]
-            elif self.active_field == "password" and self.password:
-                self.password = self.password[:-1]
-            return
-
-        elif arcade.key.A <= key <= arcade.key.Z or arcade.key.KEY_0 <= key <= arcade.key.KEY_9:
-            char = chr(key)
-            if self.active_field == "username":
-                self.username += char
-            else:
-                self.password += char
+                self.mode_label.text = "ВХОД"
+                self.mode_label.text_color = arcade.color.YELLOW
+            self.show_message("", arcade.color.WHITE)
             return
 
         elif key == arcade.key.ENTER:
-            if not self.username or not self.password:
-                self.message = "Заполните все поля!"
-                self.message_color = arcade.color.RED
-                return
-
             if self.mode == "login":
-                user = self.db.login_user(self.username, self.password)
-                if user:
-                    self.message = f"Добро пожаловать, {self.username}!"
-                    self.message_color = arcade.color.GREEN
-                    self.window.current_user = {
-                        'username': self.username,
-                        'level': user['level']
-                    }
-                    arcade.schedule(self.show_menu, 1.0)
-                else:
-                    self.message = "Неверный логин или пароль!"
-                    self.message_color = arcade.color.RED
-
-            elif self.mode == "register":
-                success = self.db.register_user(self.username, self.password)
-                if success:
-                    self.message = f"Пользователь {self.username} зарегистрирован!"
-                    self.message_color = arcade.color.GREEN
-                    user = self.db.login_user(self.username, self.password)
-                    if user:
-                        self.window.current_user = {
-                            'username': self.username,
-                            'level': user['level']
-                        }
-                        arcade.schedule(self.show_menu, 1.0)
-                else:
-                    self.message = "Пользователь с таким именем уже существует!"
-                    self.message_color = arcade.color.RED
+                self.process_login()
+            else:
+                self.process_register()
             return
 
         elif key == arcade.key.ESCAPE:
             self.window.close()
 
-    def show_menu(self, delta_time):
-        arcade.unschedule(self.show_menu)
-        self.window.show_menu()
+    def on_hide_view(self):
+        self.manager.disable()
