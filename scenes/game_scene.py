@@ -87,11 +87,12 @@ class GameScene(BaseScene):
         # Загружаем музыку и звуки
         self.game_music = arcade.Sound("resources/music/game.mp3")
         self.menu_music = arcade.Sound("resources/music/menu.mp3")
-        self.teleport_sound = arcade.Sound("resources/music/teleport.mp3")
-        self.wall_hit_sound = arcade.Sound("resources/music/move_walls.mp3")
-        self.lava_hit_sound = arcade.Sound("resources/music/lava.mp3")
-        self.coin_sound = arcade.Sound("resources/music/coin.mp3")
-        self.exit_sound = arcade.Sound("resources/music/exit.mp3")
+        self.teleport_music = arcade.Sound("resources/music/teleport.mp3")
+        self.wall_hit_music = arcade.Sound("resources/music/move_walls.mp3")
+        self.lava_hit_music = arcade.Sound("resources/music/lava.mp3")
+        self.coin_music = arcade.Sound("resources/music/coin.mp3")
+        self.exit_music = arcade.Sound("resources/music/exit.mp3")
+        self.game_over = arcade.Sound("resources/music/game_over.mp3")
 
         self.music_player = None
 
@@ -164,13 +165,14 @@ class GameScene(BaseScene):
                 self.player, self.wall_list
             )
             if wall_hit:
-                self.wall_hit_sound.play(volume=1.0)
+                self.wall_hit_music.play(volume=1.0)
 
                 self.player.lives -= 1
                 self.player.center_x = SCREEN_WIDTH // 2
                 self.player.center_y = SCREEN_HEIGHT // 2
 
                 if self.player.lives <= 0:
+                    self.game_over.play()
                     self.window.show_lose()
                     return
 
@@ -179,7 +181,7 @@ class GameScene(BaseScene):
         )
 
         if enemies_hit:
-            self.lava_hit_sound.play(volume=1.0)
+            self.lava_hit_music.play(volume=1.0)
 
             self.player.lives -= 1
             self.player.center_x = SCREEN_WIDTH // 2
@@ -196,7 +198,7 @@ class GameScene(BaseScene):
 
         if coin_hit:
             for coin in coin_hit:
-                self.coin_sound.play()
+                self.coin_music.play()
                 coin.remove_from_sprite_lists()
                 self.score += 10
 
@@ -228,7 +230,7 @@ class GameScene(BaseScene):
         )
 
         if exit_hit and len(self.coin_list) == 0:
-            self.exit_sound.play()
+            self.exit_music.play()
             self.go_to_next_sub_level()
             return
 
@@ -248,7 +250,7 @@ class GameScene(BaseScene):
 
             for other_teleport in paired_teleports:
                 if other_teleport != teleport_sprite:
-                    self.teleport_sound.play(volume=1.0)
+                    self.teleport_music.play(volume=1.0)
 
                     self.last_teleport = other_teleport
                     self.just_teleported = True
