@@ -458,7 +458,7 @@ class GameScene(BaseScene):
             self.sub_level += 1
             self.load_level()
         else:
-            self.window.show_win()
+            self.window.show_win(self.big_level)
 
     def on_big_level_complete(self):
         self.window.unlock_big_level(self.big_level + 1)

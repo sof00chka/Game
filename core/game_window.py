@@ -42,8 +42,8 @@ class GameWindow(arcade.Window):
         if self.current_scene:
             self.current_scene.on_update(delta_time)
 
-    def show_win(self):
-        self.show_view(WinScene(self))
+    def show_win(self, big_level):
+        self.show_view(WinScene(self, big_level))
 
     def show_lose(self):
         self.show_view(LoseScene(self))
