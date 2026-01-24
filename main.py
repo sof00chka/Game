@@ -1,7 +1,6 @@
 import arcade
 
 from core.game_window import GameWindow
-from core.database import Database
 
 
 def main():
