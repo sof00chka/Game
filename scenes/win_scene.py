@@ -1,4 +1,6 @@
 import arcade
+import random
+from objects.particle import Particle
 from core.constants import MAX_BIG_LEVEL
 from scenes.base_scene import BaseScene
 
@@ -41,9 +43,12 @@ class WinScene(BaseScene):
                 align="center"
             )
 
+            self.particles = arcade.SpriteList()
+
     def on_draw(self):
         self.clear()
         self.text.draw()
+        self.particles.draw()
 
     def on_key_press(self, key, modifiers):
         if self.big_level == MAX_BIG_LEVEL:
@@ -58,4 +63,37 @@ class WinScene(BaseScene):
                 self.window.show_level_select()
             elif key == arcade.key.ESCAPE:
                 arcade.exit()
+
+    def spawn_confetti(self):
+        colors = [
+            arcade.color.RED,
+            arcade.color.YELLOW,
+            arcade.color.GREEN,
+            arcade.color.BLUE,
+            arcade.color.PURPLE,
+            arcade.color.ORANGE
+        ]
+
+        for _ in range(6):
+            texture = arcade.make_soft_square_texture(
+                8,
+                random.choice(colors),
+                255
+            )
+
+            particle = Particle(
+                texture,
+                random.randint(0, self.window.width),
+                self.window.height + 10
+            )
+
+            self.particles.append(particle)
+
+    def on_update(self, delta_time):
+        self.spawn_confetti()
+        self.particles.update(delta_time)
+
+
+
+
 

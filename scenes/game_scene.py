@@ -101,6 +101,9 @@ class GameScene(BaseScene):
             self.player, self.wall_list
         )
 
+        self.level_time = 60.0  # время на уровень (сек)
+        self.time_left = self.level_time
+
     # ---------------- Рисование ----------------
 
     def on_draw(self):
@@ -121,6 +124,14 @@ class GameScene(BaseScene):
 
         self.ui_text.text = f"Score: {self.score}   Lives: {self.player.lives}"
         self.ui_text.draw()
+
+        arcade.draw_text(
+            f"Time: {int(self.time_left)}",
+            100,
+            self.window.height - 40,
+            arcade.color.WHITE,
+            20
+        )
 
     # ---------------- Обновление ----------------
 
@@ -231,6 +242,12 @@ class GameScene(BaseScene):
         if exit_hit and len(self.coin_list) == 0:
             self.exit_music.play()
             self.go_to_next_sub_level()
+            return
+
+        self.time_left -= delta_time
+
+        if self.time_left <= 0:
+            self.window.show_lose()
             return
 
     # ---------------- Телепорты ----------------
