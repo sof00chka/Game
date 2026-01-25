@@ -41,18 +41,26 @@ class LoseScene(BaseScene):
             arcade.exit()
 
     def spawn_dislike(self):
+        if len(self.particles) > 120:
+            return
+
         particle = Particle(
-            self.dislike_texture,
+            texture=self.dislike_texture,
             x=random.randint(0, self.window.width),
             y=self.window.height + 10,
-            scale=0.1
-
+            dx=random.uniform(-0.5, 0.5),
+            dy=random.uniform(-4.0, -7.0),  # намного быстрее вниз
+            gravity=0.25,  # сильнее ускорение
+            lifetime=3.5,  # живут меньше
+            scale=0.08,  # ещё мельче
+            fade=True
         )
 
         self.particles.append(particle)
 
     def on_update(self, delta_time):
-        self.spawn_dislike()
+        if random.random() < 0.25:
+            self.spawn_dislike()
         self.particles.update(delta_time)
 
 

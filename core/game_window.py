@@ -1,5 +1,6 @@
 import arcade
 
+from core.player_stats import PlayerStats
 from scenes.game_scene import GameScene
 from scenes.level_select_scene import LevelSelectScene
 from scenes.menu_scene import MenuScene
@@ -27,6 +28,8 @@ class GameWindow(arcade.Window):
         self.unlocked_big_levels = set()
 
         self.show_login()
+
+        self.stats = PlayerStats()
 
     def show_login(self):
         if self.menu_music_player:

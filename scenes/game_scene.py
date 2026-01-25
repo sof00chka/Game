@@ -1,5 +1,7 @@
 import arcade
+import random
 
+from objects.particle import Particle
 from scenes.pause_scene import PauseScene
 from scenes.base_scene import BaseScene
 from objects.player import Player
@@ -101,8 +103,15 @@ class GameScene(BaseScene):
             self.player, self.wall_list
         )
 
-        self.level_time = 60.0  # время на уровень (сек)
+        self.level_time = 120.0  # время на уровень (сек)
         self.time_left = self.level_time
+
+        self.is_game_over = False
+
+        self.shake_time = 0
+        self.shake_strength = 0
+
+        self.particles = arcade.SpriteList()
 
     # ---------------- Рисование ----------------
 
@@ -115,8 +124,8 @@ class GameScene(BaseScene):
             WORLD_WIDTH // 2, WORLD_HEIGHT // 2, WORLD_WIDTH, WORLD_HEIGHT))
 
         self.all_sprites.draw()
-
         self.player_sprite.draw()
+        self.particles.draw()
 
         self.gui_camera.use()
         self.level_text.text = f"Level: {self.big_level}-{self.sub_level}"
@@ -176,6 +185,13 @@ class GameScene(BaseScene):
             )
             if wall_hit:
                 self.wall_hit_music.play(volume=1.0)
+                self.spawn_hit_particles(
+                    self.player.center_x,
+                    self.player.center_y
+                )
+
+                self.shake_time = 0.4
+                self.shake_strength = 12
 
                 self.player.lives -= 1
                 self.player.center_x = SCREEN_WIDTH // 2
@@ -184,6 +200,8 @@ class GameScene(BaseScene):
                 if self.player.lives <= 0:
                     self.game_over.play()
                     self.window.show_lose()
+                    self.window.stats.deaths += 1
+                    self.window.stats.save()
                     return
 
         enemies_hit = arcade.check_for_collision_with_list(
@@ -192,6 +210,13 @@ class GameScene(BaseScene):
 
         if enemies_hit:
             self.lava_hit_music.play(volume=1.0)
+            self.spawn_hit_particles(
+                self.player.center_x,
+                self.player.center_y
+            )
+
+            self.shake_time = 0.5
+            self.shake_strength = 16
 
             self.player.lives -= 1
             self.player.center_x = SCREEN_WIDTH // 2
@@ -199,6 +224,8 @@ class GameScene(BaseScene):
 
             if self.player.lives <= 0:
                 self.window.show_lose()
+                self.window.stats.deaths += 1
+                self.window.stats.save()
                 return
 
         # --- сбор монет ---
@@ -246,9 +273,37 @@ class GameScene(BaseScene):
 
         self.time_left -= delta_time
 
-        if self.time_left <= 0:
+        if self.time_left <= 0 and not self.is_game_over:
+            self.is_game_over = True
+            self.spawn_hit_particles(
+                self.player.center_x,
+                self.player.center_y
+            )
             self.window.show_lose()
+            self.window.stats.deaths += 1
+            self.window.stats.save()
             return
+
+        self.window.stats.play_time += delta_time
+
+        # --------- ЭФФЕКТ ДРОЖАНИЯ КАМЕРЫ ---------
+
+        if self.shake_time > 0:
+            self.shake_time -= delta_time
+
+            offset_x = random.randint(-self.shake_strength, self.shake_strength)
+            offset_y = random.randint(-self.shake_strength, self.shake_strength)
+
+            cam_x, cam_y = self.world_camera.position
+            self.world_camera.position = (
+                cam_x + offset_x,
+                cam_y + offset_y
+            )
+
+        if random.random() < 0.05:
+            self.spawn_dust()
+
+        self.particles.update(delta_time)
 
     # ---------------- Телепорты ----------------
 
@@ -386,6 +441,7 @@ class GameScene(BaseScene):
             for enemy in self.enemy_list:
                 self.all_sprites.append(enemy)
 
+
         if "exit" in tile_map.sprite_lists:
             self.exit_list = tile_map.sprite_lists["exit"]
             for exit_sprite in self.exit_list:
@@ -484,6 +540,8 @@ class GameScene(BaseScene):
                     self.window.current_user['level'] = completed_big_level
             self.window.unlock_big_level(self.big_level)
             self.window.show_win(self.big_level)
+            self.window.stats.levels_completed += 1
+            self.window.stats.save()
 
     def on_big_level_complete(self):
         self.window.unlock_big_level(self.big_level + 1)
@@ -491,3 +549,31 @@ class GameScene(BaseScene):
             self.music_player.pause()
             self.music_player = None
         self.window.show_menu()
+
+    def spawn_dust(self):
+        p = Particle(
+            texture=arcade.load_texture("resources/particles/dust.png"),
+            x=random.randint(0, WORLD_WIDTH),
+            y=random.randint(0, WORLD_HEIGHT),
+            dx=random.uniform(-0.3, 0.3),
+            dy=random.uniform(0.2, 0.6),
+            lifetime=3.0,
+            scale=0.15,
+            fade=True
+        )
+        self.particles.append(p)
+
+    def spawn_hit_particles(self, x, y):
+        for _ in range(20):
+            p = Particle(
+                texture=arcade.load_texture("resources/particles/spark.png"),
+                x=x,
+                y=y,
+                dx=random.uniform(-3, 3),
+                dy=random.uniform(2, 5),
+                lifetime=1.5,
+                scale=0.2,
+                gravity=9
+            )
+            self.particles.append(p)
+
