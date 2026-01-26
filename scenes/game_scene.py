@@ -67,6 +67,14 @@ class GameScene(BaseScene):
             16
         )
 
+        self.time_text = arcade.Text(
+            "",
+            100,
+            SCREEN_HEIGHT - 40,
+            arcade.color.WHITE,
+            20
+        )
+
         self.rotation_timer_text = arcade.Text(
             "",
             SCREEN_WIDTH - 20,
@@ -138,15 +146,11 @@ class GameScene(BaseScene):
         self.ui_text.text = f"Score: {self.score}   Lives: {self.player.lives}"
         self.ui_text.draw()
 
-        arcade.draw_text(
-            f"Time: {int(self.time_left)}",
-            100,
-            self.window.height - 40,
-            arcade.color.WHITE,
-            20
-        )
-        #он не рисуется, но есть
-        #self.ice_list.draw()
+        self.time_text.text = f"Time: {int(self.time_left)}"
+        self.time_text.draw()
+
+        # он не рисуется, но есть
+        # self.ice_list.draw()
 
     # ---------------- Обновление ----------------
 
