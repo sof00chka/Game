@@ -1,7 +1,6 @@
 import arcade
 import random
 
-from objects.ice import Ice
 from objects.particle import Particle
 from scenes.pause_scene import PauseScene
 from scenes.base_scene import BaseScene
@@ -31,20 +30,19 @@ class GameScene(BaseScene):
             anchor_y="center"
         )
 
-        self.all_sprites = arcade.SpriteList()
+        self.all_sprites = arcade.SpriteList(use_spatial_hash=True)
 
-        self.player_sprite = arcade.SpriteList()
+        self.player_sprite = arcade.SpriteList(use_spatial_hash=True)
         self.player = Player()
         self.player_sprite.append(self.player)
 
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
-        self.coin_list = arcade.SpriteList()
-        self.enemy_list = arcade.SpriteList()
-        self.exit_list = arcade.SpriteList()
-        self.teleport_list = arcade.SpriteList()
+        self.coin_list = arcade.SpriteList(use_spatial_hash=True)
+        self.lava_list = arcade.SpriteList(use_spatial_hash=True)
+        self.exit_list = arcade.SpriteList(use_spatial_hash=True)
+        self.teleport_list = arcade.SpriteList(use_spatial_hash=True)
         self.ice_list = arcade.SpriteList(use_spatial_hash=True)
-        ice = Ice(400, 128, scale=0.25)
-        self.ice_list.append(ice)
+        self.sprike_list = arcade.SpriteList(use_spatial_hash=True)
 
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
@@ -109,7 +107,6 @@ class GameScene(BaseScene):
 
         self.music_player = None
 
-        self.load_level()
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player, self.wall_list
@@ -124,6 +121,10 @@ class GameScene(BaseScene):
         self.shake_strength = 0
 
         self.particles = arcade.SpriteList()
+
+        # Список льдин (групп спрайтов льда)
+        self.ice_sections = []
+        self.load_level()
 
     # ---------------- Рисование ----------------
 
@@ -149,13 +150,10 @@ class GameScene(BaseScene):
         self.time_text.text = f"Time: {int(self.time_left)}"
         self.time_text.draw()
 
-        # он не рисуется, но есть
-        # self.ice_list.draw()
-
     # ---------------- Обновление ----------------
 
     def on_update(self, delta_time: float):
-
+        # Обновляем игрока
         self.player.update(delta_time)
 
         if self.teleport_cooldown > 0:
@@ -169,22 +167,45 @@ class GameScene(BaseScene):
                 self.just_teleported = False
                 self.last_teleport = None
 
-        if len(self.coin_list) > 0:
-            self.physics_engine.update()
-            for sprite in self.exit_list:
-                if arcade.check_for_collision(self.player, sprite):
-                    self.player.change_x = 0
-                    self.player.change_y = 0
+        # Проверка скольжения по льду
+        if not self.player.is_sliding:
+            ice_hit_list = arcade.check_for_collision_with_list(
+                self.player, self.ice_list
+            )
+
+            if ice_hit_list:
+                # Начинаем скольжение - передаем все необходимые параметры
+                self.player.start_sliding(
+                    ice_hit_list[0],
+                    self.ice_sections,  # список групп льдин
+                    self.ice_list  # список всех спрайтов льда
+                )
+                # При скольжении временно отключаем физику
+                self.physics_engine = None
         else:
-            self.physics_engine.update()
+            # Обновляем скольжение - передаем список всех льдин
+            slide_finished = self.player.update_sliding(delta_time, self.ice_list)
+            if slide_finished:
+                # Если скольжение закончилось, восстанавливаем физику
+                self.physics_engine = arcade.PhysicsEngineSimple(
+                    self.player, self.wall_list
+                )
+                # Также сбрасываем скорость игрока после скольжения
+                self.player.change_x = 0
+                self.player.change_y = 0
 
-        ice_hit_list = arcade.check_for_collision_with_list(
-            self.player, self.ice_list
-        )
-
-        if ice_hit_list:
-            ice = ice_hit_list[0]
-            self.player.change_x *= ice.friction
+            # Применяем физику только если не скользим
+        if not self.player.is_sliding:
+            if len(self.coin_list) > 0:
+                if self.physics_engine:
+                    self.physics_engine.update()
+                for sprite in self.exit_list:
+                    if arcade.check_for_collision(self.player, sprite):
+                        self.player.change_x = 0
+                        self.player.change_y = 0
+            else:
+                if self.physics_engine:
+                    self.physics_engine.update()
 
         self.maze_manager.update(delta_time)
 
@@ -222,11 +243,11 @@ class GameScene(BaseScene):
                     self.window.stats.save()
                     return
 
-        enemies_hit = arcade.check_for_collision_with_list(
-            self.player, self.enemy_list
+        lava_hit = arcade.check_for_collision_with_list(
+            self.player, self.lava_list
         )
 
-        if enemies_hit:
+        if lava_hit:
             self.lava_hit_music.play(volume=1.0)
             self.spawn_hit_particles(
                 self.player.center_x,
@@ -240,6 +261,20 @@ class GameScene(BaseScene):
             self.player.center_x = SCREEN_WIDTH // 2
             self.player.center_y = SCREEN_HEIGHT // 2
 
+            if self.player.lives <= 0:
+                self.window.show_lose()
+                self.window.stats.deaths += 1
+                self.window.stats.save()
+                return
+
+        spike_hit = arcade.check_for_collision_with_list(
+            self.player, self.sprike_list
+        )
+
+        if spike_hit:
+            self.player.lives -= 1
+            self.player.center_x = SCREEN_WIDTH // 2
+            self.player.center_y = SCREEN_HEIGHT // 2
             if self.player.lives <= 0:
                 self.window.show_lose()
                 self.window.stats.deaths += 1
@@ -394,6 +429,8 @@ class GameScene(BaseScene):
 
         if key == arcade.key.R:
             self.maze_manager.rotate_random_sections()
+        if self.player.is_sliding:
+            return
 
         if key == arcade.key.UP:
             self.player.change_y = PLAYER_SPEED
@@ -405,6 +442,9 @@ class GameScene(BaseScene):
             self.player.change_x = PLAYER_SPEED
 
     def on_key_release(self, key, modifiers):
+        if self.player.is_sliding:
+            return
+
         if key in (arcade.key.UP, arcade.key.DOWN):
             self.player.change_y = 0
         elif key in (arcade.key.LEFT, arcade.key.RIGHT):
@@ -415,9 +455,13 @@ class GameScene(BaseScene):
     def load_level(self):
         self.wall_list = arcade.SpriteList(use_spatial_hash=True)
         self.coin_list.clear()
-        self.enemy_list.clear()
+        self.lava_list.clear()
         self.exit_list.clear()
         self.teleport_list.clear()
+        self.ice_list.clear()
+        self.sprike_list.clear()
+        self.ice_sections.clear()
+
         if hasattr(self, 'teleport_pairs'):
             self.teleport_pairs.clear()
 
@@ -462,10 +506,9 @@ class GameScene(BaseScene):
                 self.all_sprites.append(coin)
 
         if "lava" in tile_map.sprite_lists:
-            self.enemy_list.extend(tile_map.sprite_lists["lava"])
-            for enemy in self.enemy_list:
-                self.all_sprites.append(enemy)
-
+            self.lava_list.extend(tile_map.sprite_lists["lava"])
+            for lava in self.lava_list:
+                self.all_sprites.append(lava)
 
         if "exit" in tile_map.sprite_lists:
             self.exit_list = tile_map.sprite_lists["exit"]
@@ -477,11 +520,26 @@ class GameScene(BaseScene):
             for teleport in self.teleport_list:
                 teleport.scale = 2.0
                 self.all_sprites.append(teleport)
-
             self.setup_teleport_pairs()
+
+        if "ice" in tile_map.sprite_lists:
+            self.ice_list = tile_map.sprite_lists["ice"]
+            for ice in self.ice_list:
+                self.all_sprites.append(ice)
+
+            # Группируем спрайты льда в льдины
+            self.group_ice_sprites()
+
+        if "spikes" in tile_map.sprite_lists:
+            self.sprike_list = tile_map.sprite_lists["spikes"]
+            for s in self.sprike_list:
+                self.all_sprites.append(s)
 
         self.player.center_x = SCREEN_WIDTH // 2
         self.player.center_y = SCREEN_HEIGHT // 2
+
+        if self.player.is_sliding:
+            self.player.stop_sliding()
 
         self.last_teleport = None
         self.just_teleported = False
@@ -494,6 +552,9 @@ class GameScene(BaseScene):
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player, self.wall_list
         )
+
+        self.time_left = self.level_time
+        self.is_game_over = False
 
     # ---------------- Вспомогательные методы для вращающихся стен ----------------
 
@@ -540,6 +601,41 @@ class GameScene(BaseScene):
                     self.all_sprites.remove(wall)
                 return True
         return False
+
+    # ---------------- Методы для группировки льда ----------------
+
+    def group_ice_sprites(self):
+        """Группируем спрайты льда в льдины"""
+        self.ice_sections = []
+        processed = set()
+
+        for ice_sprite in self.ice_list:
+            if ice_sprite in processed:
+                continue
+
+            current_section = []
+            to_process = [ice_sprite]
+
+            while to_process:
+                current = to_process.pop()
+                if current in processed:
+                    continue
+
+                processed.add(current)
+                current_section.append(current)
+
+                for other in self.ice_list:
+                    if other in processed:
+                        continue
+
+                    dx = abs(current.center_x - other.center_x)
+                    dy = abs(current.center_y - other.center_y)
+
+                    if dx < 34 and dy < 34:
+                        to_process.append(other)
+
+            if current_section:
+                self.ice_sections.append(current_section)
 
     def on_show_view(self):
         if self.music_player is None:
@@ -603,15 +699,15 @@ class GameScene(BaseScene):
             self.particles.append(p)
 
     # def spawn_portal_particles(self, portal_sprite):
-        # for _ in range(2):  # сколько частиц за кадр
-            # p = Particle(
-               # texture=arcade.load_texture("resources/particles/portal.png"),
-               # x=portal_sprite.center_x + random.randint(-12, 12),
-               # y=portal_sprite.center_y + random.randint(-12, 12),
-               # dx=random.uniform(-0.3, 0.3),
-               # dy=random.uniform(-0.3, 0.3),
-               # lifetime=0.6,
-               # scale=0.02,
-               # fade=True
-            # )
-            # self.particles.append(p)
+    # for _ in range(2):  # сколько частиц за кадр
+    # p = Particle(
+    # texture=arcade.load_texture("resources/particles/portal.png"),
+    # x=portal_sprite.center_x + random.randint(-12, 12),
+    # y=portal_sprite.center_y + random.randint(-12, 12),
+    # dx=random.uniform(-0.3, 0.3),
+    # dy=random.uniform(-0.3, 0.3),
+    # lifetime=0.6,
+    # scale=0.02,
+    # fade=True
+    # )
+    # self.particles.append(p)
