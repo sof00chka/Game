@@ -1,6 +1,7 @@
 import arcade
 import random
 
+from objects.ice import Ice
 from objects.particle import Particle
 from scenes.pause_scene import PauseScene
 from scenes.base_scene import BaseScene
@@ -41,6 +42,9 @@ class GameScene(BaseScene):
         self.enemy_list = arcade.SpriteList()
         self.exit_list = arcade.SpriteList()
         self.teleport_list = arcade.SpriteList()
+        self.ice_list = arcade.SpriteList(use_spatial_hash=True)
+        ice = Ice(400, 128, scale=0.25)
+        self.ice_list.append(ice)
 
         self.world_camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
@@ -141,6 +145,8 @@ class GameScene(BaseScene):
             arcade.color.WHITE,
             20
         )
+        #он не рисуется, но есть
+        #self.ice_list.draw()
 
     # ---------------- Обновление ----------------
 
@@ -167,6 +173,14 @@ class GameScene(BaseScene):
                     self.player.change_y = 0
         else:
             self.physics_engine.update()
+
+        ice_hit_list = arcade.check_for_collision_with_list(
+            self.player, self.ice_list
+        )
+
+        if ice_hit_list:
+            ice = ice_hit_list[0]
+            self.player.change_x *= ice.friction
 
         self.maze_manager.update(delta_time)
 
@@ -304,6 +318,13 @@ class GameScene(BaseScene):
             self.spawn_dust()
 
         self.particles.update(delta_time)
+
+        # ------ Частицы портала ------
+        # посмотришь как, просто у меня лагает, я пытался оптимизировать, но как-то не оч получилось
+        # for portal in self.teleport_list:
+        #   if random.random() < 0.15:
+        #       self.spawn_portal_particles(portal)
+        # self.particles.update(delta_time)
 
     # ---------------- Телепорты ----------------
 
@@ -577,3 +598,16 @@ class GameScene(BaseScene):
             )
             self.particles.append(p)
 
+    # def spawn_portal_particles(self, portal_sprite):
+        # for _ in range(2):  # сколько частиц за кадр
+            # p = Particle(
+               # texture=arcade.load_texture("resources/particles/portal.png"),
+               # x=portal_sprite.center_x + random.randint(-12, 12),
+               # y=portal_sprite.center_y + random.randint(-12, 12),
+               # dx=random.uniform(-0.3, 0.3),
+               # dy=random.uniform(-0.3, 0.3),
+               # lifetime=0.6,
+               # scale=0.02,
+               # fade=True
+            # )
+            # self.particles.append(p)
