@@ -8,7 +8,11 @@ from scenes.base_scene import BaseScene
 class WinScene(BaseScene):
     def __init__(self, window, big_level):
         super().__init__(window)
+
         self.big_level = big_level
+        self.particles = arcade.SpriteList()
+        self.confetti_started = False
+
         if self.big_level == MAX_BIG_LEVEL:
             self.text = arcade.Text(
                 "ПОБЕДА!\n\n"
@@ -43,7 +47,6 @@ class WinScene(BaseScene):
                 align="center"
             )
 
-            self.particles = arcade.SpriteList()
 
     def on_draw(self):
         self.clear()
@@ -82,16 +85,26 @@ class WinScene(BaseScene):
             )
 
             particle = Particle(
-                texture,
-                random.randint(0, self.window.width),
-                self.window.height + 10
+                texture=texture,
+                x=random.randint(0, self.window.width),
+                y=self.window.height + 10,
+                dx=random.uniform(-1, 1),
+                dy=random.uniform(-4, -2),  # ВНИЗ
+                lifetime=3.0,
+                scale=1.0,
+                gravity=0
             )
 
             self.particles.append(particle)
 
     def on_update(self, delta_time):
-        self.spawn_confetti()
+        if not self.confetti_started:
+            for _ in range(15):
+                self.spawn_confetti()
+            self.confetti_started = True
+
         self.particles.update(delta_time)
+
 
 
 
