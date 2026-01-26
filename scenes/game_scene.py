@@ -7,7 +7,7 @@ from scenes.base_scene import BaseScene
 from objects.player import Player
 from core.constants import (
     PLAYER_SPEED, SCREEN_WIDTH, SCREEN_HEIGHT,
-    WORLD_WIDTH, WORLD_HEIGHT, CAMERA_LERP
+    WORLD_WIDTH, WORLD_HEIGHT, CAMERA_LERP, LEVEL_TIME
 )
 
 from objects.dynamic_elements import RotatingWallSection
@@ -103,7 +103,7 @@ class GameScene(BaseScene):
             self.player, self.wall_list
         )
 
-        self.level_time = 120.0  # время на уровень (сек)
+        self.level_time = LEVEL_TIME  # время на уровень (сек)
         self.time_left = self.level_time
 
         self.is_game_over = False
