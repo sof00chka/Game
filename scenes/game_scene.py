@@ -53,7 +53,7 @@ class GameScene(BaseScene):
             "",
             20,
             SCREEN_HEIGHT - 40,
-            arcade.color.WHITE,
+            arcade.color.BLACK,
             16
         )
 
@@ -61,7 +61,7 @@ class GameScene(BaseScene):
             "",
             20,
             SCREEN_HEIGHT - 60,
-            arcade.color.WHITE,
+            arcade.color.BLACK,
             16
         )
 
@@ -69,7 +69,7 @@ class GameScene(BaseScene):
             "",
             100,
             SCREEN_HEIGHT - 40,
-            arcade.color.WHITE,
+            arcade.color.BLACK,
             20
         )
 
@@ -77,7 +77,7 @@ class GameScene(BaseScene):
             "",
             SCREEN_WIDTH - 20,
             SCREEN_HEIGHT - 80,
-            arcade.color.YELLOW,
+            arcade.color.BLACK,
             16,
             anchor_x="right"
         )

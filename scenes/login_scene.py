@@ -19,7 +19,7 @@ class LoginScene(BaseScene):
             text="CHRONO LABYRINTH",
             font_size=48,
             font_name="Arial",
-            text_color=arcade.color.WHITE
+            text_color=arcade.color.BLACK
         )
         self.main_box.add(title_label)
 
@@ -34,7 +34,7 @@ class LoginScene(BaseScene):
         login_text_label = arcade.gui.UILabel(
             text="ЛОГИН:",
             font_size=24,
-            text_color=arcade.color.WHITE
+            text_color=arcade.color.BLACK
         )
         login_container.add(login_text_label)
         self.username_input = arcade.gui.UIInputText(
@@ -50,7 +50,7 @@ class LoginScene(BaseScene):
         password_text_label = arcade.gui.UILabel(
             text="ПАРОЛЬ:",
             font_size=24,
-            text_color=arcade.color.WHITE
+            text_color=arcade.color.BLACK
         )
         password_container.add(password_text_label)
         self.password_input = arcade.gui.UIInputText(
@@ -98,7 +98,7 @@ class LoginScene(BaseScene):
                  "[ENTER] - подтвердить\n"
                  "[ESC] - выход из игры",
             font_size=18,
-            text_color=arcade.color.LIGHT_GRAY,
+            text_color=arcade.color.BLACK,
             width=500,
             multiline=True,
             align="center"
@@ -113,6 +113,7 @@ class LoginScene(BaseScene):
 
     def on_draw(self):
         self.clear(arcade.color.BLACK)
+        self.draw_background()
         self.manager.draw()
 
     def on_login_click(self, event):

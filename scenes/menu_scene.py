@@ -23,7 +23,7 @@ class MenuScene(BaseScene):
             "CHRONO LABYRINTH",
             window.width // 2,
             window.height // 2 + 120,
-            arcade.color.WHITE,
+            arcade.color.BLACK,
             font_size=40,
             anchor_x="center"
         )
@@ -32,7 +32,7 @@ class MenuScene(BaseScene):
             "Dynamic Maze. Shifting Time.",
             window.width // 2,
             window.height // 2 + 60,
-            arcade.color.LIGHT_GRAY,
+            arcade.color.BLACK,
             font_size=18,
             anchor_x="center"
         )
@@ -43,7 +43,7 @@ class MenuScene(BaseScene):
             "[ ESC ]    Выход",
             window.width // 2,
             window.height // 2 - 20,
-            arcade.color.WHITE,
+            arcade.color.BLACK,
             font_size=20,
             anchor_x="center",
             anchor_y="center",
@@ -54,6 +54,7 @@ class MenuScene(BaseScene):
 
     def on_draw(self):
         self.clear()
+        self.draw_background()
 
         if self.user_text:
             self.user_text.draw()

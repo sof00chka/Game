@@ -34,7 +34,7 @@ class LevelSelectScene(BaseScene):
             "[ ESC ] Назад",
             window.width // 2,
             100,
-            arcade.color.WHITE,
+            arcade.color.BLACK,
             22,
             anchor_x="center",
             anchor_y="center",
@@ -81,6 +81,7 @@ class LevelSelectScene(BaseScene):
     def on_draw(self):
         self.clear(arcade.color.BLACK)
         self.title.draw()
+        self.draw_background()
         self.back_text.draw()
         self.error_text.draw()
 

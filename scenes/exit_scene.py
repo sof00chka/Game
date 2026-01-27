@@ -1,7 +1,6 @@
 import arcade
 from scenes.base_scene import BaseScene
 
-
 class ExitScene(BaseScene):
     def __init__(self, window):
         super().__init__(window)
@@ -24,6 +23,7 @@ class ExitScene(BaseScene):
 
     def on_draw(self):
         self.clear()
+        self.draw_background()
         self.text.draw()
 
     def on_key_press(self, key, modifiers):

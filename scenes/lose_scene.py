@@ -31,6 +31,7 @@ class LoseScene(BaseScene):
 
     def on_draw(self):
         self.clear()
+        self.draw_background()
         self.text.draw()
         self.particles.draw()
 
