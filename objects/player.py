@@ -1,6 +1,6 @@
 import arcade
-import math
-from core.constants import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, ICE_SPEED, ICE_SLIDE_FRICTION
+from core.constants import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SPEED, ICE_SPEED
+
 
 class Player(arcade.Sprite):
     def __init__(self):
@@ -71,24 +71,24 @@ class Player(arcade.Sprite):
         self.is_sliding = True
         self.original_speed = (self.change_x, self.change_y)
         self.ice_section = self.find_ice_section(ice_sprite, ice_sections)
-        self.ice_side = self.determine_ice_side(ice_list)
+
+        self.ice_side = self.determine_ice_side(ice_sprite)
         slide_to_right = self.should_slide_right()
         self.calculate_slide_target(slide_to_right)
         self.setup_slide_visuals(slide_to_right)
         self.is_walking = False
 
-    def determine_ice_side(self, ice_list):
-        collisions = []
-        for ice in ice_list:
-            if arcade.check_for_collision(self, ice):
-                collisions.append(ice)
+    def determine_ice_side(self, ice_sprite):
+        vertical_distance = self.center_y - ice_sprite.center_y
 
-        if not collisions:
-            return "top"
+        total_height = (self.height / 2) + (ice_sprite.height / 2)
 
-        avg_y = sum(ice.center_y for ice in collisions) / len(collisions)
-
-        if self.center_y > avg_y:
+        if abs(vertical_distance) < total_height * 0.3:
+            if self.change_y > 0:
+                return "bottom"
+            else:
+                return "top"
+        elif vertical_distance > 0:
             return "bottom"
         else:
             return "top"
@@ -126,10 +126,7 @@ class Player(arcade.Sprite):
         else:
             self.scale_x = -1.5
 
-        if self.ice_side == "top":
-            self.scale_y = -1.5
-        else:
-            self.scale_y = 1.5
+        self.scale_y = 1.5
 
     def update_sliding(self, delta_time, ice_list):
         if not self.is_sliding or self.target_x is None:
@@ -139,7 +136,11 @@ class Player(arcade.Sprite):
             self.stop_sliding()
             return True
 
-        self.update_ice_side_during_slide(ice_list)
+        current_ice = self.get_current_ice(ice_list)
+        if current_ice:
+            new_side = self.determine_ice_side(current_ice)
+            if new_side != self.ice_side:
+                self.ice_side = new_side
 
         self.center_x += self.change_x * delta_time
 
@@ -150,25 +151,11 @@ class Player(arcade.Sprite):
 
         return False
 
-    def update_ice_side_during_slide(self, ice_list):
-        current_ice = None
+    def get_current_ice(self, ice_list):
         for ice_sprite in ice_list:
             if arcade.check_for_collision(self, ice_sprite):
-                current_ice = ice_sprite
-                break
-
-        if current_ice:
-            if self.center_y > current_ice.center_y:
-                new_side = "bottom"
-            else:
-                new_side = "top"
-
-            if new_side != self.ice_side:
-                self.ice_side = new_side
-                if self.ice_side == "top":
-                    self.scale_y = -1.5
-                else:
-                    self.scale_y = 1.5
+                return ice_sprite
+        return None
 
     def check_if_touching_ice(self, ice_list):
         for ice_sprite in ice_list:

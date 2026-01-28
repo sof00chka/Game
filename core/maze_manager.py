@@ -1,11 +1,12 @@
 import random
+from core.constants import MOVE_INTERVAL
 
 
 class MazeManager:
     def __init__(self):
         self.rotating_sections = []
         self.change_timer = 0
-        self.change_interval = 30.0
+        # self.change_interval = 10.0
         self.last_rotation_time = 0
 
     def add_rotating_section(self, section):
@@ -16,11 +17,10 @@ class MazeManager:
         self.change_timer += delta_time
         self.last_rotation_time += delta_time
 
-        if self.change_timer >= self.change_interval and self.last_rotation_time >= 2.0:
+        if self.change_timer >= MOVE_INTERVAL and self.last_rotation_time >= 2.0:
             self.rotate_random_sections()
             self.change_timer = 0
             self.last_rotation_time = 0
-            self.change_interval = random.uniform(30.0, 60.0)
 
     def rotate_random_sections(self):
         if not self.rotating_sections:
@@ -37,4 +37,4 @@ class MazeManager:
             section.should_rotate = True
 
     def get_remaining_time(self):
-        return max(0, self.change_interval - self.change_timer)
+        return max(0, MOVE_INTERVAL - self.change_timer)
