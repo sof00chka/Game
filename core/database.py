@@ -78,4 +78,3 @@ class Database:
         players = cursor.fetchall()
         conn.close()
         return players
-

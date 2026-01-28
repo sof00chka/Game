@@ -1,18 +1,19 @@
 import arcade
 import random
 
+
 class Particle(arcade.Sprite):
     def __init__(
-        self,
-        texture,
-        x,
-        y,
-        dx=0,
-        dy=0,
-        lifetime=1.0,
-        scale=1.0,
-        fade=True,
-        gravity=0
+            self,
+            texture,
+            x,
+            y,
+            dx=0,
+            dy=0,
+            lifetime=1.0,
+            scale=1.0,
+            fade=True,
+            gravity=0
     ):
         super().__init__(texture, scale)
 

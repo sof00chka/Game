@@ -1,6 +1,7 @@
 import arcade
 import os
 
+
 class BaseScene(arcade.View):
     def __init__(self, window):
         super().__init__()

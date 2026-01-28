@@ -2,6 +2,7 @@ import json
 
 FILE = "stats.json"
 
+
 class PlayerStats:
     def __init__(self):
         self.deaths = 0

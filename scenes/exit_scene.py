@@ -1,6 +1,7 @@
 import arcade
 from scenes.base_scene import BaseScene
 
+
 class ExitScene(BaseScene):
     def __init__(self, window):
         super().__init__(window)

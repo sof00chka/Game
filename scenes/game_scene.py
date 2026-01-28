@@ -358,13 +358,6 @@ class GameScene(BaseScene):
 
         self.particles.update(delta_time)
 
-        # ------ Частицы портала ------
-        # посмотришь как, просто у меня лагает, я пытался оптимизировать, но как-то не оч получилось
-        # for portal in self.teleport_list:
-        #   if random.random() < 0.15:
-        #       self.spawn_portal_particles(portal)
-        # self.particles.update(delta_time)
-
     # ---------------- Телепорты ----------------
 
     def handle_teleport(self, teleport_sprite):
@@ -698,16 +691,3 @@ class GameScene(BaseScene):
             )
             self.particles.append(p)
 
-    # def spawn_portal_particles(self, portal_sprite):
-    # for _ in range(2):  # сколько частиц за кадр
-    # p = Particle(
-    # texture=arcade.load_texture("resources/particles/portal.png"),
-    # x=portal_sprite.center_x + random.randint(-12, 12),
-    # y=portal_sprite.center_y + random.randint(-12, 12),
-    # dx=random.uniform(-0.3, 0.3),
-    # dy=random.uniform(-0.3, 0.3),
-    # lifetime=0.6,
-    # scale=0.02,
-    # fade=True
-    # )
-    # self.particles.append(p)

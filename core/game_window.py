@@ -81,8 +81,3 @@ class GameWindow(arcade.Window):
     def show_level_select(self):
         self.current_scene = LevelSelectScene(self)
         self.show_view(self.current_scene)
-
-
-
-
-

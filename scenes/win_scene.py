@@ -47,7 +47,6 @@ class WinScene(BaseScene):
                 align="center"
             )
 
-
     def on_draw(self):
         self.clear()
         self.draw_background()
@@ -105,9 +104,3 @@ class WinScene(BaseScene):
             self.confetti_started = True
 
         self.particles.update(delta_time)
-
-
-
-
-
-

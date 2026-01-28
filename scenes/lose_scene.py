@@ -4,7 +4,6 @@ from scenes.base_scene import BaseScene
 from objects.particle import Particle
 
 
-
 class LoseScene(BaseScene):
     def __init__(self, window):
         super().__init__(window)
@@ -63,7 +62,3 @@ class LoseScene(BaseScene):
         if random.random() < 0.25:
             self.spawn_dislike()
         self.particles.update(delta_time)
-
-
-
-
